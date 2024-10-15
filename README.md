@@ -1,6 +1,28 @@
 # Migration from ADO to GH
 
-1. Create a Personel Access Token
+## Migrated Items
+
+Mmigrating the following repository data from Azure DevOps to GitHub Enterprise Cloud.
+
+* Git source (including commit history)
+* Pull requests
+* User history for pull requests
+* Work item links on pull requests
+* Attachments on pull requests
+* Branch policies for the repository (user-scoped branch policies and cross-repo branch policies are not included)
+
+## Links
+* https://github.com/tjcorr/github-migration
+* https://docs.github.com/en/migrations/using-github-enterprise-importer/migrating-from-azure-devops-to-github-enterprise-cloud/about-migrations-from-azure-devops-to-github-enterprise-cloud
+
+
+## Install CLI
+
+Install GitHub CLI
+
+Install ado2gh plugin for GitHub CLI
+
+## Create a Personel Access Token
 
 Assign the permission depending of the role (Enterprise owner, Organization owner, Migrator).
 Use personal access token (classic) Only.
@@ -10,7 +32,7 @@ Permissions: `admin:org, repo, workflow`
 $env:GH_PAT="ghp_V42LfhyBO0BenoitxYs8PVyHoPper42Yd0qn"
 ````
 
-1. Grant Importer Role
+## Grant Importer Role
 
 Allow `bmoussaud` user to migrate repository to the `moussaudms` github organization
 
@@ -28,11 +50,11 @@ $gh ado2gh grant-migrator-role --github-org bmoussaudms --actor bmoussaud --acto
 [2024-10-15 15:08:19] [INFO] Migrator role successfully set for the USER "bmoussaud"
 ```
 
-1. Generate the global migration script
+## Generate the global migration script
 
 ```
-$env:GH_PAT="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"
-$env:ADO_PAT="A2jd4EHC4POKcRAp9WLYaMb9G0VYCjAntvaIG3d4W8YwAR7EFRQsJQQJ99AJACAAAAAAArohAAASAZDODzi8"
+$env:GH_PAT="ghp_V42LfhyBO0BenoitxYs8PVyHoPper42Yd0qn"
+$env:ADO_PAT="A2jd4EHC4POKcRAp9BenoitWWLYaMb9G0VYCjAnt4W8YwAR7EFRQsJQQJ99AJACAAAAAAArohAAASAZDODzi8"
 gh ado2gh generate-script --ado-org mseng --github-org bmoussaudms --output migrate.ps1 
 ```
 
@@ -58,7 +80,7 @@ This action reads the information in ADO and generate a huge powershell script t
 .....
 ```
 
-1. Migrate a repository
+## Migrate a repository (details)
 
 For each repository the previous command generate a command like this one
 
@@ -120,6 +142,36 @@ At the end of the migration script , it displays
 Total number of successful migrations: $Succeeded
 Total number of failed migrations: $Failed
 ```
+
+## Option --create_team
+
+With this options activated, the powershell script include for each migrated repository the creation of 2 teams
+* One for Mainteners
+* One for Admins
+
+That can be linked to an Identity Provider if `--link-idp-groups xxxx` provided.
+Doc: https://docs.github.com/en/enterprise-cloud@latest/organizations/organizing-members-into-teams/synchronizing-a-team-with-an-identity-provider-group
+
+```
+gh ado2gh create-team --github-org "bmoussaudms" --team-name "Typescript-Maintainers" 
+gh ado2gh create-team --github-org "bmoussaudms" --team-name "Typescript-Admins" 
+```
+
+```
+[2024-10-15 16:18:54] [INFO] You are running an up-to-date version of the ado2gh CLI [v1.8.0]
+[2024-10-15 16:18:54] [INFO] GITHUB ORG: bmoussaudms
+[2024-10-15 16:18:54] [INFO] TEAM NAME: Typescript-Maintainers
+[2024-10-15 16:18:54] [INFO] Creating GitHub team...
+[2024-10-15 16:18:55] [INFO] Successfully created team
+[2024-10-15 16:18:55] [INFO] No IdP Group provided, skipping the IdP linking step
+```
+
+## Option --lock-ado-repos         
+Includes lock-ado-repo scripts that lock repos before migrating them.
+
+## Option  --rewire-pipelines                 
+Includes share-service-connection and rewire-pipeline scripts that rewire Azure Pipelines to point to GitHub repos.
+
 ## Output 
 
 ### Repository Migration
@@ -140,6 +192,8 @@ Total number of failed migrations: $Failed
 
 ![Migration Logs](img/Migration_log.png "Migration Logs")
 
-Doc: 
-## Links
-* https://github.com/tjcorr/github-migration
+### Teams
+
+![Teams](img/teams.png "teams")
+
+
