@@ -2,7 +2,7 @@
 
 ## Migrated Items
 
-Mmigrating the following repository data from Azure DevOps to GitHub Enterprise Cloud.
+Migrating a repository data from Azure DevOps to GitHub Enterprise Cloud includes:
 
 * Git source (including commit history)
 * Pull requests
@@ -18,26 +18,46 @@ Mmigrating the following repository data from Azure DevOps to GitHub Enterprise 
 
 ## Install CLI
 
-Install GitHub CLI
+Install [GitHub CLI](https://cli.github.com/)
 
 Install ado2gh plugin for GitHub CLI
 
-## Create a Personel Access Token
+```
+gh extension install github/gh-ado2gh
+```
+
+## Create an ADO Token
+
+Create an ADO personal access token (PAT). See [instructions](https://learn.microsoft.com/en-us/azure/devops/organizations/accounts/use-personal-access-tokens-to-authenticate?view=azure-devops&tabs=Windows#create-a-pat). Necessary permission vary for different steps:
+  - Most operations require basic access: `work item (read)`, `code (read)`, and `identity (read)` scopes.
+  - Additional functionality in ADO2GH also requires: `code (read/write/manage)`, `security (manage)`, `build (read)`, and `service connection (read)` 
+  - Full control is needed for performing the inventory report and to integrate boards.
+
+```ps1
+$env:ADO_PAT="EMl5wguBt0UjUa1qyD1YGHDG3KHVPKN4eX9wwLcaOU0RmTbf7GHuJQQJ99AJACAAAAAAArohAAASAZDOnp9r"
+````
+![PAT](img/ADO_PAT.png "ADO PAT")
+
+## Create a GitHub Personel Access Token (PAT)
 
 Assign the permission depending of the role (Enterprise owner, Organization owner, Migrator).
-Use personal access token (classic) Only.
-Permissions: `admin:org, repo, workflow`
 
-```
+Use personal access token __classic__ Only.
+
+The Permissions are `admin:org, repo, workflow`
+
+```ps1
 $env:GH_PAT="ghp_V42LfhyBO0BenoitxYs8PVyHoPper42Yd0qn"
 ````
 
-## Grant Importer Role
+## Grant Importer Role (GitHub)
 
-Allow `bmoussaud` user to migrate repository to the `moussaudms` github organization
+Allow `bmoussaud` user to migrate repository to the `moussaudms` GitHub organization.
 
-```
-$gh ado2gh grant-migrator-role --github-org bmoussaudms --actor bmoussaud --actor-type USER
+The targeted user is one from which you have created the PAT.
+
+```ps1
+gh ado2gh grant-migrator-role --github-org bmoussaudms --actor bmoussaud --actor-type USER
 ```
 
 ```
@@ -52,10 +72,10 @@ $gh ado2gh grant-migrator-role --github-org bmoussaudms --actor bmoussaud --acto
 
 ## Generate the global migration script
 
-```
+```ps1
 $env:GH_PAT="ghp_V42LfhyBO0BenoitxYs8PVyHoPper42Yd0qn"
 $env:ADO_PAT="A2jd4EHC4POKcRAp9BenoitWWLYaMb9G0VYCjAnt4W8YwAR7EFRQsJQQJ99AJACAAAAAAArohAAASAZDODzi8"
-gh ado2gh generate-script --ado-org mseng --github-org bmoussaudms --output migrate.ps1 
+gh ado2gh generate-script --ado-org mseng --github-org bmoussaudms --output migrate.ps1
 ```
 
 This action reads the information in ADO and generate a huge powershell script the include the different command to migrate the repository and the team. No action on the Github Organization.
@@ -84,9 +104,11 @@ This action reads the information in ADO and generate a huge powershell script t
 
 For each repository the previous command generate a command like this one
 
-```
+```ps1
 gh ado2gh migrate-repo --ado-org "mseng" --ado-team-project "Typescript" --ado-repo "Typescript" --github-org "bmoussaudms" --github-repo "Typescript-Typescript" --queue-only --target-repo-visibility private
 ```
+
+Note: the `--queue-only` means it is an asynchronous job.
 
 The ouput is indicating the action to trigger the migration using an *asynchronous* task
 
@@ -105,8 +127,8 @@ The ouput is indicating the action to trigger the migration using an *asynchrono
 
 Then later the script will wait for the end of the migration
 
-```
-gh ado2gh wait-for-migration --migration-id $RepoMigrations["mseng/Typescript-Typescript"]
+```ps1
+gh ado2gh wait-for-migration --migration-id $RM_kgDaACQ0YmY0OWFiNi03MmFkLTRiN2ItOTYwYS1mMzA4ZGI5MjY2NDg
 ```
 
 ```
@@ -121,7 +143,7 @@ gh ado2gh wait-for-migration --migration-id $RepoMigrations["mseng/Typescript-Ty
 
 To get the details or logs for a given repository
 
-```
+```ps1
 gh ado2gh download-logs --github-org bmoussaudms --github-repo Typescript-Typescript
 ```
 
@@ -143,9 +165,46 @@ Total number of successful migrations: $Succeeded
 Total number of failed migrations: $Failed
 ```
 
+## Option --sequential
+
+With this options activated, the generated powershell script includes synchronous calls only.
+For each repository, the command looks like:
+
+```ps1
+gh ado2gh migrate-repo --ado-org "mseng" --ado-team-project "DevTest" --ado-repo "ArtifactsForTesting" --github-org "bmoussaudms" --github-repo "DevTest-ArtifactsForTesting" --target-repo-visibility private
+```
+```
+[2024-10-17 10:45:05] [INFO] You are running an up-to-date version of the ado2gh CLI [v1.8.0]
+[2024-10-17 10:45:05] [INFO] ADO ORG: mseng
+[2024-10-17 10:45:05] [INFO] ADO TEAM PROJECT: DevTest
+[2024-10-17 10:45:05] [INFO] ADO REPO: ArtifactsForTesting
+[2024-10-17 10:45:05] [INFO] GITHUB ORG: bmoussaudms
+[2024-10-17 10:45:05] [INFO] GITHUB REPO: DevTest-ArtifactsForTesting
+[2024-10-17 10:45:05] [INFO] TARGET REPO VISIBILITY: private
+[2024-10-17 10:45:05] [INFO] Migrating Repo...
+[2024-10-17 10:45:07] [INFO] Migration in progress (ID: RM_kgDaACRkZjI3OTNjNC00ZTFlLTQ1NTQtODc4Yy04YTI3MWE5OWZkODg). State: PENDING_VALIDATION. Waiting 10 seconds...
+[2024-10-17 10:45:18] [INFO] Migration in progress (ID: RM_kgDaACRkZjI3OTNjNC00ZTFlLTQ1NTQtODc4Yy04YTI3MWE5OWZkODg). State: QUEUED. Waiting 10 seconds...
+[2024-10-17 10:45:28] [INFO] Migration in progress (ID: RM_kgDaACRkZjI3OTNjNC00ZTFlLTQ1NTQtODc4Yy04YTI3MWE5OWZkODg). State: IN_PROGRESS. Waiting 10 seconds...
+[2024-10-17 10:45:38] [INFO] Migration in progress (ID: RM_kgDaACRkZjI3OTNjNC00ZTFlLTQ1NTQtODc4Yy04YTI3MWE5OWZkODg). State: IN_PROGRESS. Waiting 10 seconds...
+[2024-10-17 10:45:49] [INFO] Migration in progress (ID: RM_kgDaACRkZjI3OTNjNC00ZTFlLTQ1NTQtODc4Yy04YTI3MWE5OWZkODg). State: IN_PROGRESS. Waiting 10 seconds...
+[2024-10-17 10:45:59] [INFO] Migration in progress (ID: RM_kgDaACRkZjI3OTNjNC00ZTFlLTQ1NTQtODc4Yy04YTI3MWE5OWZkODg). State: IN_PROGRESS. Waiting 10 seconds...
+[2024-10-17 10:46:09] [INFO] Migration in progress (ID: RM_kgDaACRkZjI3OTNjNC00ZTFlLTQ1NTQtODc4Yy04YTI3MWE5OWZkODg). State: IN_PROGRESS. Waiting 10 seconds...
+[2024-10-17 10:46:20] [INFO] Migration in progress (ID: RM_kgDaACRkZjI3OTNjNC00ZTFlLTQ1NTQtODc4Yy04YTI3MWE5OWZkODg). State: IN_PROGRESS. Waiting 10 seconds...
+[2024-10-17 10:46:30] [INFO] Migration in progress (ID: RM_kgDaACRkZjI3OTNjNC00ZTFlLTQ1NTQtODc4Yy04YTI3MWE5OWZkODg). State: IN_PROGRESS. Waiting 10 seconds...
+[2024-10-17 10:46:40] [INFO] Migration in progress (ID: RM_kgDaACRkZjI3OTNjNC00ZTFlLTQ1NTQtODc4Yy04YTI3MWE5OWZkODg). State: IN_PROGRESS. Waiting 10 seconds...
+[2024-10-17 10:46:51] [INFO] Migration in progress (ID: RM_kgDaACRkZjI3OTNjNC00ZTFlLTQ1NTQtODc4Yy04YTI3MWE5OWZkODg). State: IN_PROGRESS. Waiting 10 seconds...
+[2024-10-17 10:47:01] [INFO] Migration in progress (ID: RM_kgDaACRkZjI3OTNjNC00ZTFlLTQ1NTQtODc4Yy04YTI3MWE5OWZkODg). State: IN_PROGRESS. Waiting 10 seconds...
+[2024-10-17 10:47:11] [INFO] Migration in progress (ID: RM_kgDaACRkZjI3OTNjNC00ZTFlLTQ1NTQtODc4Yy04YTI3MWE5OWZkODg). State: IN_PROGRESS. Waiting 10 seconds...
+[2024-10-17 10:47:21] [INFO] Migration in progress (ID: RM_kgDaACRkZjI3OTNjNC00ZTFlLTQ1NTQtODc4Yy04YTI3MWE5OWZkODg). State: IN_PROGRESS. Waiting 10 seconds...
+[2024-10-17 10:47:32] [INFO] Migration in progress (ID: RM_kgDaACRkZjI3OTNjNC00ZTFlLTQ1NTQtODc4Yy04YTI3MWE5OWZkODg). State: IN_PROGRESS. Waiting 10 seconds...
+[2024-10-17 10:47:42] [INFO] Migration in progress (ID: RM_kgDaACRkZjI3OTNjNC00ZTFlLTQ1NTQtODc4Yy04YTI3MWE5OWZkODg). State: IN_PROGRESS. Waiting 10 seconds...
+[2024-10-17 10:47:52] [INFO] Migration completed (ID: RM_kgDaACRkZjI3OTNjNC00ZTFlLTQ1NTQtODc4Yy04YTI3MWE5OWZkODg)! State: SUCCEEDED
+[2024-10-17 10:47:52] [INFO] Migration log available at https://objects-origin.githubusercontent.com/octoshiftmigrationlogs/bmoussaudms/DevTest-ArtifactsForTesting-df2793c4-4e1e-4554-878c-8a271a99fd88-logs.txt?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=***%2F20241017%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20241017T084752Z&X-Amz-Expires=432000&X-Amz-Signature=7f75d5c66945e3388639340d4a86da3f44c658ce1e631161f89dc959c183c14a&X-Amz-SignedHeaders=host or by running `gh ado2gh download-logs --github-org bmoussaudms --github-repo DevTest-ArtifactsForTesting`
+```
+
 ## Option --create_team
 
-With this options activated, the powershell script include for each migrated repository the creation of 2 teams
+With this options activated, the powershell script includes for each migrated repository the creation of 2 teams
 * One for Mainteners
 * One for Admins
 
@@ -167,9 +226,11 @@ gh ado2gh create-team --github-org "bmoussaudms" --team-name "Typescript-Admins"
 ```
 
 ## Option --lock-ado-repos         
-Includes lock-ado-repo scripts that lock repos before migrating them.
 
-## Option  --rewire-pipelines                 
+Includes lock-ado-repo scripts that locks repositories before migrating them.
+
+## Option  --rewire-pipelines        
+
 Includes share-service-connection and rewire-pipeline scripts that rewire Azure Pipelines to point to GitHub repos.
 
 ## Output 
@@ -190,7 +251,7 @@ Includes share-service-connection and rewire-pipeline scripts that rewire Azure 
 
 ### Migration Logs
 
-![Migration Logs](img/Migration_log.png "Migration Logs")
+![Migration Logs](img/Migration_log_2.PNG "Migration Logs")
 
 ### Teams
 
