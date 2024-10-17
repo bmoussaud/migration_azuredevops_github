@@ -258,3 +258,6 @@ Includes share-service-connection and rewire-pipeline scripts that rewire Azure 
 ![Teams](img/teams.png "teams")
 
 
+## DEMO VIDEO
+
+[VIDEO DEMO](https://microsofteur-my.sharepoint.com/:v:/g/personal/bmoussaud_microsoft_com/EUA3mrP6h4xPgsnL7a9LlisB1Cqd8nCv9K_zE6fbzQFoYA?e=YEANRE&nav=eyJyZWZlcnJhbEluZm8iOnsicmVmZXJyYWxBcHAiOiJTdHJlYW1XZWJBcHAiLCJyZWZlcnJhbFZpZXciOiJTaGFyZURpYWxvZy1MaW5rIiwicmVmZXJyYWxBcHBQbGF0Zm9ybSI6IldlYiIsInJlZmVycmFsTW9kZSI6InZpZXcifX0%3D)
